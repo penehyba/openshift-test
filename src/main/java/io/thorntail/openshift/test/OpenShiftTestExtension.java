@@ -50,6 +50,12 @@ final class OpenShiftTestExtension implements BeforeAllCallback, AfterAllCallbac
         TestInstancePostProcessor, ParameterResolver,
         LifecycleMethodExecutionExceptionHandler, TestExecutionExceptionHandler {
 
+    private static boolean skipOpenshiftYml() {
+
+        System.out.println("loading skip option for openshift YML: " + System.getProperty("skipOpenshiftYaml"));
+        return "true".equals(System.getProperty("skipOpenshiftYaml"));
+    }
+
     private static Path getResourcesYaml() {
         return Paths.get("target", "classes", "META-INF", "jkube", "openshift.yml");
     }
@@ -154,7 +160,7 @@ final class OpenShiftTestExtension implements BeforeAllCallback, AfterAllCallbac
 
         runPublicStaticVoidMethods(CustomizeApplicationDeployment.class, context);
 
-        if (!getManualDeploymentAnnotation(context).isPresent()) {
+        if (!getManualDeploymentAnnotation(context).isPresent() && !skipOpenshiftYml()) {
             Path yaml = getResourcesYaml();
             if (!Files.exists(yaml)) {
                 throw new OpenShiftTestException("Missing " + yaml);
@@ -320,7 +326,7 @@ final class OpenShiftTestExtension implements BeforeAllCallback, AfterAllCallbac
             shouldUndeployApplication = false;
         }
 
-        if (shouldUndeployApplication) {
+        if (shouldUndeployApplication  && !skipOpenshiftYml()) {
             System.out.println("undeploying application");
             new Command("oc", "delete", "-f", getResourcesYaml().toString(), "--ignore-not-found").runAndWait();
         }
